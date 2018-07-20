@@ -1,0 +1,8 @@
+.PHONY: build
+.DEFAULT_GOAL := build
+
+build:
+	docker build -t bist100  .
+
+run: build
+	docker run -e CONSUMERKEY=$(CONSUMERKEY) -e CONSUMERSECRET=$(CONSUMERSECRET) -e ACCESSTOKEN=$(ACCESSTOKEN) -e ACCESSSECRET=$(ACCESSSECRET) bist100
