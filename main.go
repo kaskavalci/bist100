@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/dghubble/go-twitter/twitter"
 	"github.com/dghubble/oauth1"
@@ -65,7 +66,28 @@ func main() {
 
 	httpClient := oauthCfg.Client(oauth1.NoContext, token)
 	client := twitter.NewClient(httpClient)
+	run(client)
+}
 
+func isWeekDay(t time.Time) bool {
+	if t.Weekday() != time.Saturday && t.Weekday() != time.Sunday {
+		return true
+	}
+	return false
+}
+
+func run(client *twitter.Client) {
+	ticker := time.NewTicker(1 * time.Second)
+	for t := range ticker.C {
+		// Turkey is UTC+3. Markets close at 17.
+		// Run it at the end of the each work day
+		if t.UTC().Hour() == 17-3 && isWeekDay(t) {
+			tweet(client)
+		}
+	}
+}
+
+func tweet(client *twitter.Client) {
 	// get stock market details
 	resp, _ := http.Get("https://www.doviz.com/api/v1/indexes/XU100/latest")
 
