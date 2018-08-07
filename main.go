@@ -77,7 +77,7 @@ func isWeekDay(t time.Time) bool {
 }
 
 func run(client *twitter.Client) {
-	ticker := time.NewTicker(1 * time.Second)
+	ticker := time.NewTicker(1 * time.Hour)
 	for t := range ticker.C {
 		// Turkey is UTC+3. Markets close at 17.
 		// Run it at the end of the each work day
