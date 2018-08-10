@@ -78,12 +78,14 @@ func isWeekDay(t time.Time) bool {
 
 func run(client *twitter.Client) {
 	ticker := time.NewTicker(1 * time.Hour)
-	for t := range ticker.C {
+	for {
+		t := time.Now().UTC()
 		// Turkey is UTC+3. Markets close at 17.
 		// Run it at the end of the each work day
-		if t.UTC().Hour() == 17-3 && isWeekDay(t) {
+		if t.Hour() == 17-3 && isWeekDay(t) {
 			tweet(client)
 		}
+		<-ticker.C
 	}
 }
 
@@ -108,7 +110,7 @@ func tweet(client *twitter.Client) {
 	if data.FirstClose > data.PreviousClose {
 		result = fmt.Sprintf("sıçmadı 😎\nBIST100 %%%f artışla kapandı.", diff)
 	} else {
-		result = fmt.Sprintf("sıçtı 🤬\nBIST100 %%%f düşüşle kapandı.", diff)
+		result = fmt.Sprintf("sıçtı 🤬\nBIST100 %%%f düşüşle kapandı.", -diff)
 	}
 	status := fmt.Sprintf("%s\nAçılış: %s\nKapanış: %s", result, opening, closing)
 	fmt.Println(status)
