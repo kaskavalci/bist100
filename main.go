@@ -25,8 +25,9 @@ type TwitterCreds struct {
 
 // StockData is what we read from borsa.com, at least what we need
 type StockData struct {
-	FirstClose    float64 `json:"first_seance_closing"`
 	PreviousClose float64 `json:"previous_closing"`
+	Latest        float64 `json:"latest"`
+	ChangeRate    float64 `json:"change_rate"`
 }
 
 // read api keys from environmental variables
@@ -78,11 +79,16 @@ func isWeekDay(t time.Time) bool {
 
 func run(client *twitter.Client) {
 	ticker := time.NewTicker(1 * time.Hour)
+	loc, err := time.LoadLocation("Europe/Istanbul")
+	if err != nil {
+		log.Printf("cannot find location database. Please install tzdata: %v", err)
+		loc, _ = time.LoadLocation("UTC")
+	}
 	for {
-		t := time.Now().UTC()
+		t := time.Now().In(loc)
 		// Turkey is UTC+3. Markets close at 17.
 		// Run it at the end of the each work day
-		if t.Hour() == 17-3 && isWeekDay(t) {
+		if t.Hour() == 17 && isWeekDay(t) {
 			tweet(client)
 		}
 		<-ticker.C
@@ -101,16 +107,15 @@ func tweet(client *twitter.Client) {
 		return
 	}
 
-	opening := strconv.FormatFloat(data.FirstClose, 'f', 3, 64)
-	closing := strconv.FormatFloat(data.PreviousClose, 'f', 3, 64)
-	diff := ((data.FirstClose - data.PreviousClose) / data.PreviousClose) * 100
+	opening := strconv.FormatFloat(data.PreviousClose, 'f', 3, 64)
+	closing := strconv.FormatFloat(data.Latest, 'f', 3, 64)
 
 	// tweet
 	var result string
-	if data.FirstClose > data.PreviousClose {
-		result = fmt.Sprintf("sıçmadı 😎\nBIST100 %%%f artışla kapandı.", diff)
+	if data.Latest > data.PreviousClose {
+		result = fmt.Sprintf("sıçmadı 😎\nBIST100 %%%.2f artışla kapandı.", data.ChangeRate)
 	} else {
-		result = fmt.Sprintf("sıçtı 🤬\nBIST100 %%%f düşüşle kapandı.", -diff)
+		result = fmt.Sprintf("sıçtı 🤬\nBIST100 %%%.2f düşüşle kapandı.", -data.ChangeRate)
 	}
 	status := fmt.Sprintf("%s\nAçılış: %s\nKapanış: %s", result, opening, closing)
 	fmt.Println(status)
